@@ -4,7 +4,6 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Data;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -29,7 +28,7 @@ namespace PRoConEvents {
 		private DateTime m_dateOld;
 
 		// User Settings
-		//private List<string> m_ignoreTags;
+		//private List<string> m_ignoreTags; can't implement until DICE gets there stuff together
 		private int m_iMinKickScore;
 
 		private enumBoolYesNo m_bDebugOn;
@@ -45,12 +44,6 @@ namespace PRoConEvents {
 
 		public CMakeroom()
 		{
-			//this.m_ignoreTags = new List<string>();
-			//this.m_ignoreTags.Add("CLANTAG1");
-			//this.m_ignoreTags.Add("CLANTAG2");
-			//this.m_ignoreTags.Add("CiD");
-			//this.m_ignoreTags.Add("RPK");
-
                this.m_dateOld = this.m_dateKickOptionsSet = DateTime.Now;
 
 			this.m_kickOptions = new List<KeyValuePair<string, int>>();
@@ -80,36 +73,36 @@ namespace PRoConEvents {
 		}
 
 		public string GetPluginDescription() {
-		return @"        <h2>Description</h2>
-        <p>This plugin allows an admin the choose from three of the lowest score players to kick (ex: in order to make room for a clan mate).  Just type <b>!makeroom</b> then <b>#1</b>, <b>#2</b>, or <b>#3</b> to kick them.<br /><br />
-        Plugin originally developed by Dan Caldwell for the CiD Clan.
-        <br /><br />
-        <h2>Settings Summary</h2>
-        <br />
-        <ul>
-          <li><b>Safe Score</b><br />
-          <br />
-          No players will be kicked if they have reached this score - even if they are the lowest.<br />
-          <br /><br />
-          </li>
-          <li><b>Global Message When Kicking</b><br />
-          <br />
-          Message to the server when command executed.
-          <br /><br />
-          </li>
-          <li><b>Message To The Kicked</b><br />
-          <br />
-		Message to those being kicked.
-          <br /><br />
-          </i>
-          <li><b>Debug On</b><br />
-          <br />
-		Ignore.  No longer used but can be used in the script if needed if extending plugin.
-          <br /><br />
-          </li>
-        </ul>
-        <br />
-	";
+			return @"        <h2>Description</h2>
+	        <p>This plugin allows an admin the choose from three of the lowest score players to kick (ex: in order to make room for a clan mate).  Just type <b>!makeroom</b> then <b>#1</b>, <b>#2</b>, or <b>#3</b> to kick them.<br /><br />
+	        Plugin originally developed by Dan Caldwell for the CiD Clan.
+	        <br /><br />
+	        <h2>Settings Summary</h2>
+	        <br />
+	        <ul>
+	          <li><b>Safe Score</b><br />
+	          <br />
+	          No players will be kicked if they have reached this score - even if they are the lowest.<br />
+	          <br /><br />
+	          </li>
+	          <li><b>Global Message When Kicking</b><br />
+	          <br />
+	          Message to the server when command executed.
+	          <br /><br />
+	          </li>
+	          <li><b>Message To The Kicked</b><br />
+	          <br />
+			Message to those being kicked.
+	          <br /><br />
+	          </i>
+	          <li><b>Debug On</b><br />
+	          <br />
+			Ignore.  No longer used but can be used in the script if needed if extending plugin.
+	          <br /><br />
+	          </li>
+	        </ul>
+	        <br />
+		";
 		}
 
 		public List<CPluginVariable> GetDisplayPluginVariables()
