@@ -18,8 +18,8 @@ using PRoCon.Core.Players;
 using PRoCon.Core.Players.Items;
 
 namespace PRoConEvents {
-    public class CMakeroom : PRoConPluginAPI, IPRoConPluginInterface
-    {
+	public class CMakeroom : PRoConPluginAPI, IPRoConPluginInterface
+	{
 		#region Variables and Constructors
 		private string m_strHostName;
 		private string m_strPort;
@@ -45,7 +45,7 @@ namespace PRoConEvents {
 
 		public CMakeroom()
 		{
-               this.m_dateOld = this.m_dateKickOptionsSet = DateTime.Now;
+			this.m_dateOld = this.m_dateKickOptionsSet = DateTime.Now;
 
 			this.m_kickOptions = new List<KeyValuePair<string, int>>();
 			this.m_iMinKickScore = 1000;
@@ -54,7 +54,7 @@ namespace PRoConEvents {
 			this.m_bPluginActive = enumBoolYesNo.No;
 			this.m_strCommandGivenMessage = "Lowest score player will be kicked to make room for a Clan Member";
 			this.m_strPrivateKickMessage = "You will be kicked to make room for a Clan Member";
-          }
+		}
 
 		#region PluginSetup
 
@@ -163,32 +163,32 @@ namespace PRoConEvents {
 		{
 			int i=0;
 
-	          /*if (strVariable.CompareTo("Clan Tags to Ignore (See Plugin Description)") == 0)
+			/*if (strVariable.CompareTo("Clan Tags to Ignore (See Plugin Description)") == 0)
 			{
 				string[] split = strValue.Split(',');
 				this.m_ignoreTags = new List<string>(split);
-	          }*/
-           	
+			}*/
+
 			if (strVariable.CompareTo("Safe Score") == 0 && int.TryParse(strValue, out i) == true)
 			{
-               	this.m_iMinKickScore = i;
-	          }
+				this.m_iMinKickScore = i;
+			}
 			else if (strVariable.CompareTo("Kick Delay") == 0 && int.TryParse(strValue, out i) == true)
 			{
-               	this.m_iKickDelay = i;
-	          }
-	          else if (strVariable.CompareTo("Debug On") == 0 && Enum.IsDefined(typeof(enumBoolYesNo), strValue) == true)
-	          {
-	                this.m_bDebugOn = (enumBoolYesNo)Enum.Parse(typeof(enumBoolYesNo), strValue);
-	          }
-	          else if (strVariable.CompareTo("Global Message When Kicking") == 0)
-	          {
-	              this.m_strCommandGivenMessage = strValue;
-	          }
-	          else if (strVariable.CompareTo("Message To The Kicked") == 0)
-	          {
-	              this.m_strPrivateKickMessage = strValue;
-	          }
+				this.m_iKickDelay = i;
+			}
+			else if (strVariable.CompareTo("Debug On") == 0 && Enum.IsDefined(typeof(enumBoolYesNo), strValue) == true)
+			{
+				this.m_bDebugOn = (enumBoolYesNo)Enum.Parse(typeof(enumBoolYesNo), strValue);
+			}
+			else if (strVariable.CompareTo("Global Message When Kicking") == 0)
+			{
+				this.m_strCommandGivenMessage = strValue;
+			}
+			else if (strVariable.CompareTo("Message To The Kicked") == 0)
+			{
+				this.m_strPrivateKickMessage = strValue;
+			}
 		}
 
 		#endregion
@@ -201,39 +201,39 @@ namespace PRoConEvents {
 
 		public void OnPluginLoaded(string strHostName, string strPort, string strPRoConVersion)
 		{
-            this.m_strHostName = strHostName;
-            this.m_strPort = strPort;
-            this.m_strPRoConVersion = strPRoConVersion;
-            this.RegisterEvents(this.GetType().Name, "OnListPlayers", "OnPlayerLeft", "OnPlayerJoin", "OnGlobalChat", "OnTeamChat", "OnSquadChat", "OnLevelLoaded");
+			this.m_strHostName = strHostName;
+			this.m_strPort = strPort;
+			this.m_strPRoConVersion = strPRoConVersion;
+			this.RegisterEvents(this.GetType().Name, "OnListPlayers", "OnPlayerLeft", "OnPlayerJoin", "OnGlobalChat", "OnTeamChat", "OnSquadChat", "OnLevelLoaded");
 		}
 
 		public void OnPluginEnable()
 		{
-            this.ExecuteCommand("procon.protected.pluginconsole.write", "^bCMakeroom ^2Enabled!");
-            StartMakeroomSystem();
+			this.ExecuteCommand("procon.protected.pluginconsole.write", "^bCMakeroom ^2Enabled!");
+			StartMakeroomSystem();
 		}
 
 		public void OnPluginDisable() {
-            this.ExecuteCommand("procon.protected.pluginconsole.write", "^bCMakeroom ^1Disabled =(");
-            StopMakeroomSystem();
+			this.ExecuteCommand("procon.protected.pluginconsole.write", "^bCMakeroom ^1Disabled =(");
+			StopMakeroomSystem();
 		}
 
 		public void OnGlobalChat(string speaker, string message) {
-            ProcessChatMessage(speaker, message);
+			ProcessChatMessage(speaker, message);
 		}
 
 		public void OnTeamChat(string speaker, string message, int teamId) {
-            ProcessChatMessage(speaker, message);
+			ProcessChatMessage(speaker, message);
 		}
 
 		public void OnSquadChat(string speaker, string message, int teamId, int squadId) {
-            ProcessChatMessage(speaker, message);
-        	}
+			ProcessChatMessage(speaker, message);
+		}
 
 		public void OnRoundOver(int winningTeamId)
 		{
 			StopMakeroomSystem();
-          }
+		}
 
 		public void OnLevelLoaded(string mapFileName, string Gamemode, int roundsPlayed, int roundsTotal) {
 			StartMakeroomSystem();
@@ -242,33 +242,33 @@ namespace PRoConEvents {
 		private bool KickOptionsStillValid()
 		{ TimeSpan duration = DateTime.Now - this.m_dateKickOptionsSet; return (this.m_kickOptions.Count >= 3 && duration.TotalSeconds < 15); }
 
-	     private void ProcessChatMessage(string speaker, string message)
-	     {
-				CPrivileges cpPlayerPrivs = this.GetAccountPrivileges(speaker);
+		private void ProcessChatMessage(string speaker, string message)
+		{
+			CPrivileges cpPlayerPrivs = this.GetAccountPrivileges(speaker);
 
-				if (this.m_bPluginActive == enumBoolYesNo.Yes)
+			if (this.m_bPluginActive == enumBoolYesNo.Yes)
+			{
+				Match match = Regex.Match(message, @"#(\d)");
+				if (match.Success)
 				{
-					Match match = Regex.Match(message, @"#(\d)");
-					if (match.Success)
-					{
-						// this.ExecuteCommand("procon.protected.pluginconsole.write", "vote received " + match.Groups[1].Value);
-						KickPlayerOption(Convert.ToInt32(match.Groups[1].Value));
-					}
+					// this.ExecuteCommand("procon.protected.pluginconsole.write", "vote received " + match.Groups[1].Value);
+					KickPlayerOption(Convert.ToInt32(match.Groups[1].Value));
+				}
 
-					match = Regex.Match(message, @"^!makeroom");
-					if (match.Success)
+				match = Regex.Match(message, @"^!makeroom");
+				if (match.Success)
+				{
+					// this.ExecuteCommand("procon.protected.pluginconsole.write", "makeroom chat message received by " + speaker);
+					if (cpPlayerPrivs.CanKickPlayers)
 					{
-						// this.ExecuteCommand("procon.protected.pluginconsole.write", "makeroom chat message received by " + speaker);
-						if (cpPlayerPrivs.CanKickPlayers)
-						{
-							KickLowPlayer(speaker);
-						}
-						else
-						{
-							this.ExecuteCommand("procon.protected.send", "admin.say", "makeroom privileges denied...", "all");
-						}
+						KickLowPlayer(speaker);
+					}
+					else
+					{
+						this.ExecuteCommand("procon.protected.send", "admin.say", "makeroom privileges denied...", "all");
 					}
 				}
+			}
 		}
 
 		private void KickLowPlayer(string speaker)
@@ -328,7 +328,7 @@ namespace PRoConEvents {
 
 			// this.ExecuteCommand("procon.protected.pluginconsole.write", "OPTIONS DISPLAYED FOR " + speaker);
 
-               this.ExecuteCommand("procon.protected.send", "admin.say", "Select Low Score Player To Kick:", "player", speaker);
+			this.ExecuteCommand("procon.protected.send", "admin.say", "Select Low Score Player To Kick:", "player", speaker);
 			for(int i = 0; i < 3; i++)
 			{
 				this.ExecuteCommand("procon.protected.send", "admin.say", '#' + i.ToString() + ' ' + this.m_kickOptions[i].Key, "player", speaker);
@@ -347,5 +347,5 @@ namespace PRoConEvents {
 			}
 		}
 
-    }
+	}
 }
