@@ -117,6 +117,10 @@ namespace PRoConEvents {
 	        </ul>
 	        <br><br>
 	        <h3>Change Log</h3><br>
+	        <h4>0.5</h4><br>
+	        <ul>
+	        <li>Fixed: Made several improvements/fixes.</li>
+	        </ul>
 	        <h4>0.4</h4><br>
 	        <ul>
 	        <li>Fixed: Several bugs.</li>
