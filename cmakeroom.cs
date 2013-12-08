@@ -30,13 +30,14 @@ namespace PRoConEvents {
 		// User Settings
 		//private List<string> m_ignoreTags; can't implement until DICE gets there stuff together
 		private int m_iMinKickScore;
+		private int m_iKickDelay;
 
 		private enumBoolYesNo m_bDebugOn;
 		private enumBoolYesNo m_bPluginActive;
 
 		private string m_strCommandGivenMessage;
 		private string m_strPrivateKickMessage;
-		
+
 		private List<KeyValuePair<string, int>> m_kickOptions;
 		
 		#endregion
@@ -48,10 +49,11 @@ namespace PRoConEvents {
 
 			this.m_kickOptions = new List<KeyValuePair<string, int>>();
 			this.m_iMinKickScore = 1000;
+			this.m_iKickDelay = 10;
 			this.m_bDebugOn = enumBoolYesNo.Yes;
 			this.m_bPluginActive = enumBoolYesNo.No;
 			this.m_strCommandGivenMessage = "Lowest score player will be kicked to make room for a Clan Member";
-			this.m_strPrivateKickMessage = "You have been kicked to make room for a Clan Member";
+			this.m_strPrivateKickMessage = "You will be kicked to make room for a Clan Member";
           }
 
 		#region PluginSetup
@@ -61,7 +63,7 @@ namespace PRoConEvents {
 		}
 
 		public string GetPluginVersion() {
-			return "0.2";
+			return "0.3";
 		}
 
 		public string GetPluginAuthor() {
@@ -82,7 +84,12 @@ namespace PRoConEvents {
 	        <ul>
 	          <li><b>Safe Score</b><br />
 	          <br />
-	          No players will be kicked if they have reached this score - even if they are the lowest.<br />
+	          No players will be kicked if they have reached this score - even if they are the lowest.  Example: if set to 10 then only the newjoins will be likely kicked.  If set to 50000 then all lowscores are subject to kick.<br />
+	          <br /><br />
+	          </li>
+	          <li><b>Kick Delay</b><br />
+	          <br />
+	          Seconds between command being issued and player being kicked (Gives the player time to read the bye-bye message).  Setting this to zero means immediate kick.
 	          <br /><br />
 	          </li>
 	          <li><b>Global Message When Kicking</b><br />
@@ -101,6 +108,23 @@ namespace PRoConEvents {
 	          <br /><br />
 	          </li>
 	        </ul>
+	        <br><br>
+	        <h3>Change Log</h3><br>
+	        <h4>0.3</h4><br>
+	        <ul>
+	        <li>Fixed: Small not enough players bug.</li>
+	        <li>Added: Kick Delay</li>
+	        <li>Changed: Message to kicked method.</li>
+	        </ul>
+	        <h4>0.2</h4><br>
+	        <ul>
+	        <li>Initial Full Release</li>
+	        </ul>
+	        <h4>0.1</h4><br>
+	        <ul>
+	        <li>Developmental release.</li>
+	        </ul>
+
 	        <br />
 		";
 		}
@@ -111,6 +135,7 @@ namespace PRoConEvents {
 
 			//r.Add(new CPluginVariable("Plugin|Clan Tags to Ignore (See Plugin Description)", typeof(string), GetTagsString() ));
 			r.Add(new CPluginVariable("Plugin|Safe Score", this.m_iMinKickScore.GetType(), this.m_iMinKickScore));
+			r.Add(new CPluginVariable("Plugin|Kick Delay", this.m_iKickDelay.GetType(), this.m_iKickDelay));
 			r.Add(new CPluginVariable("Display|Global Message When Kicking", this.m_strCommandGivenMessage.GetType(), this.m_strCommandGivenMessage));
 			r.Add(new CPluginVariable("Display|Message To The Kicked", this.m_strPrivateKickMessage.GetType(), this.m_strPrivateKickMessage));
 			r.Add(new CPluginVariable("Display|Debug On", typeof(enumBoolYesNo), this.m_bDebugOn));
@@ -125,6 +150,7 @@ namespace PRoConEvents {
 
 			//r.Add(new CPluginVariable("Clan Tags to Ignore (See Plugin Description)", typeof(string), GetTagsString() ));
 			r.Add(new CPluginVariable("Safe Score", this.m_iMinKickScore.GetType(), this.m_iMinKickScore));
+			r.Add(new CPluginVariable("Kick Delay", this.m_iKickDelay.GetType(), this.m_iKickDelay));
 			r.Add(new CPluginVariable("Global Message When Kicking", this.m_strCommandGivenMessage.GetType(), this.m_strCommandGivenMessage));
 			r.Add(new CPluginVariable("Message To The Kicked", this.m_strPrivateKickMessage.GetType(), this.m_strPrivateKickMessage));
 			r.Add(new CPluginVariable("Debug On", typeof(enumBoolYesNo), this.m_bDebugOn));
@@ -135,7 +161,7 @@ namespace PRoConEvents {
 
 		public void SetPluginVariable(string strVariable, string strValue)
 		{
-			int iMinScore =0;
+			int i=0;
 
 	          /*if (strVariable.CompareTo("Clan Tags to Ignore (See Plugin Description)") == 0)
 			{
@@ -143,9 +169,13 @@ namespace PRoConEvents {
 				this.m_ignoreTags = new List<string>(split);
 	          }*/
            	
-			 if (strVariable.CompareTo("Safe Score") == 0 && int.TryParse(strValue, out iMinScore) == true)
+			if (strVariable.CompareTo("Safe Score") == 0 && int.TryParse(strValue, out i) == true)
 			{
-               	this.m_iMinKickScore = iMinScore;
+               	this.m_iMinKickScore = i;
+	          }
+			else if (strVariable.CompareTo("Kick Delay") == 0 && int.TryParse(strValue, out i) == true)
+			{
+               	this.m_iKickDelay = i;
 	          }
 	          else if (strVariable.CompareTo("Debug On") == 0 && Enum.IsDefined(typeof(enumBoolYesNo), strValue) == true)
 	          {
@@ -210,12 +240,12 @@ namespace PRoConEvents {
 		}
 
 		private bool KickOptionsStillValid()
-		{ TimeSpan duration = DateTime.Now - this.m_dateKickOptionsSet; return (duration.TotalSeconds < 15); }
+		{ TimeSpan duration = DateTime.Now - this.m_dateKickOptionsSet; return (this.m_kickOptions.Count >= 3 && duration.TotalSeconds < 15); }
 
 	     private void ProcessChatMessage(string speaker, string message)
 	     {
 				CPrivileges cpPlayerPrivs = this.GetAccountPrivileges(speaker);
-	
+
 				if (this.m_bPluginActive == enumBoolYesNo.Yes)
 				{
 					Match match = Regex.Match(message, @"#(\d)");
@@ -245,7 +275,8 @@ namespace PRoConEvents {
 		{
 			if (this.FrostbitePlayerInfoList.Count < 4)
 			{
-				this.ExecuteCommand("procon.protected.send", "admin.say", "not enough players", "all");
+				this.ExecuteCommand("procon.protected.send", "admin.say", "Not enough players", "all");
+				return;
 			}
 
 			// is the current list still recent.
@@ -287,20 +318,23 @@ namespace PRoConEvents {
 
 		private void DisplayKickOptions(string speaker)
 		{
+			if (this.m_kickOptions.Count < 3) // dummy proof it
+			{
+				this.ExecuteCommand("procon.protected.send", "admin.say", "Not enough players", "all");
+				return;
+			}
+
 			this.m_dateKickOptionsSet = DateTime.Now;
 
 			// this.ExecuteCommand("procon.protected.pluginconsole.write", "OPTIONS DISPLAYED FOR " + speaker);
 
                this.ExecuteCommand("procon.protected.send", "admin.say", "Select Low Score Player To Kick:", "player", speaker);
-			int i=1;
-			foreach( KeyValuePair<string,int> player in this.m_kickOptions )
+			for(int i = 0; i < 3; i++)
 			{
-				this.ExecuteCommand("procon.protected.send", "admin.say", '#' + i.ToString() + ' ' + player.Key, "player", speaker);
-				if (i==3) break;
-				i++;
+				this.ExecuteCommand("procon.protected.send", "admin.say", '#' + i.ToString() + ' ' + this.m_kickOptions[i].Key, "player", speaker);
 			}
 		}
-		
+
 		private void KickPlayerOption(int option)
 		{
 			if (KickOptionsStillValid())
@@ -308,7 +342,8 @@ namespace PRoConEvents {
 				this.m_dateKickOptionsSet = this.m_dateOld; // invalidate kick options
 				this.ExecuteCommand("procon.protected.send", "admin.say", this.m_strCommandGivenMessage, "all");
 				this.ExecuteCommand("procon.protected.send", "admin.say", "Unfortunate Soldier: " + this.m_kickOptions[option].Key, "all");
-				this.ExecuteCommand("procon.protected.tasks.add", "CMakeroom", "10", "1", "1", "procon.protected.send", "admin.kickPlayer", this.m_kickOptions[option].Key, this.m_strPrivateKickMessage);
+				this.ExecuteCommand("procon.protected.send", "admin.say", this.m_kickOptions[option].Key + " - " + this.m_strPrivateKickMessage, "player", this.m_kickOptions[option].Key);
+				this.ExecuteCommand("procon.protected.tasks.add", "CMakeroom", this.m_iKickDelay.ToString(), "1", "1", "procon.protected.send", "admin.kickPlayer", this.m_kickOptions[option].Key, null);
 			}
 		}
 
