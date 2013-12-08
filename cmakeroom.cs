@@ -82,7 +82,7 @@ namespace PRoConEvents {
 	        <br><br>
 		   Just type <b>!makeroom</b> then <b>#1</b>, <b>#2</b>, or <b>#3</b> to kick them.
 		   <br><br>
-		   Type <b>?makeroom</b> to kick the first person on the list without prompt.
+		   Type <b>?makeroom</b> to kick the lowest score player without prompt.
 		   <br /><br />
 	        Plugin originally developed by Dan Caldwell for the CiD Clan.
 	        <br /><br />
