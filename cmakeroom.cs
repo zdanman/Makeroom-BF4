@@ -65,7 +65,7 @@ namespace PRoConEvents {
 		}
 
 		public string GetPluginVersion() {
-			return "0.4";
+			return "0.5";
 		}
 
 		public string GetPluginAuthor() {
@@ -256,7 +256,7 @@ namespace PRoConEvents {
 		}
 
 		private bool KickOptionsStillValid()
-		{ TimeSpan duration = DateTime.Now - this.m_dateKickOptionsSet; return (this.m_kickOptions.Count >= 3 && duration.TotalSeconds < 10); }
+		{ TimeSpan duration = DateTime.Now - this.m_dateKickOptionsSet; return (this.m_kickOptions.Count >= 3 && duration.TotalSeconds < 15); }
 
 		private void ProcessChatMessage(string speaker, string message)
 		{
@@ -268,10 +268,11 @@ namespace PRoConEvents {
 			Match match = Regex.Match(message, @"#(\d)");
 			if (match.Success)
 			{
-				if (KickOptionsStillValid() && speaker == this.m_strAdmin)
+				// this.ExecuteCommand("procon.protected.pluginconsole.write", "vote received " + match.Groups[1].Value);
+				if (cpPlayerPrivs.CanKickPlayers)
 				{
-					// this.ExecuteCommand("procon.protected.pluginconsole.write", "vote received " + match.Groups[1].Value);
-					KickPlayerOption(Convert.ToInt32(match.Groups[1].Value));
+					// kick player selected - 1 (because displayed is [1 - 3] not [0 - 2]
+					KickPlayerOption(speaker, (Convert.ToInt32(match.Groups[1].Value)) - 1);
 				}
 			}
 
@@ -289,7 +290,8 @@ namespace PRoConEvents {
 					{
 						/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", "executing !makeroom");
 
-						KickLowPlayer(speaker);
+						GenerateKickOptions(speaker);
+						DisplayKickOptions(speaker);
 					}
 				}
 				else
@@ -312,8 +314,8 @@ namespace PRoConEvents {
 					{
 						/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", "executing ?makeroom");
 
-						KickLowPlayer(speaker);
-						KickPlayerOption(0); // go ahead and kick first player in list
+						GenerateKickOptions(speaker);
+						KickPlayerOption(speaker, 0); // go ahead and kick first player in list
 					}
 				}
 				else
@@ -323,9 +325,9 @@ namespace PRoConEvents {
 			}
 		}
 
-		private void KickLowPlayer(string speaker)
+		private void GenerateKickOptions(string speaker)
 		{
-			if (this.FrostbitePlayerInfoList.Count < 4)
+			if (this.FrostbitePlayerInfoList.Count < 3)
 			{
 				/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", this.FrostbitePlayerInfoList.Count.ToString() + " players available - not enough in KickLowPlayer");
 				this.ExecuteCommand("procon.protected.send", "admin.say", "Not enough players", "player", speaker);
@@ -333,11 +335,7 @@ namespace PRoConEvents {
 			}
 
 			// is the current list still recent.
-			if ( KickOptionsStillValid() )
-			{
-				DisplayKickOptions(speaker);
-				return;
-			}
+			if ( KickOptionsStillValid() ) return;
 
 			// refresh list
 			this.m_kickOptions.Clear();
@@ -355,48 +353,53 @@ namespace PRoConEvents {
 						this.m_kickOptions.Insert(2, new KeyValuePair<string, int>(player.Key, player.Value.Score) );
 				}
 			}
-
-			// begin execute
-			if (this.m_kickOptions.Count > 0)
+			
+			// check list
+			if (this.m_kickOptions.Count == 0)
 			{
-				// validate and display them
-				this.m_dateKickOptionsSet = DateTime.Now;
-
-				DisplayKickOptions(speaker);
+				this.ExecuteCommand("procon.protected.send", "admin.say", "No low score player found.", "player", speaker);
+				return;
 			}
-			else
+			if (this.m_kickOptions.Count < 3)
 			{
-				this.ExecuteCommand("procon.protected.send", "admin.say", "No low score player found.", "all");
+				this.ExecuteCommand("procon.protected.send", "admin.say", "Not enough players.", "player", speaker);
+				return;
 			}
+
+			// done - validate list
+			this.m_dateKickOptionsSet = DateTime.Now;
+			this.m_strAdmin = speaker;
 		}
 
 
 		private void DisplayKickOptions(string speaker)
 		{
-			if (!KickOptionsStillValid())
-			{
-				/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", this.m_kickOptions.Count.ToString() + " players available - not enough - in DisplayKickOptions");
-				this.ExecuteCommand("procon.protected.send", "admin.say", "Not enough players", "player", speaker);
-				return;
-			}
-			
-			this.m_strAdmin = speaker;
-			this.m_dateKickOptionsSet = DateTime.Now;
-
-			// this.ExecuteCommand("procon.protected.pluginconsole.write", "OPTIONS DISPLAYED FOR " + speaker);
+			if (!KickOptionsStillValid()) return;
 
 			this.ExecuteCommand("procon.protected.send", "admin.say", "Select Low Score Player To Kick:", "player", speaker);
 			for(int i = 0; i < 3; i++)
 			{
-				/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", "soldier option: #" + i.ToString() + " " + this.m_kickOptions[i].Key);
+				/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", "displaying soldier option: #" + (i+1).ToString() + " " + this.m_kickOptions[i].Key);
 
-				this.ExecuteCommand("procon.protected.send", "admin.say", '#' + i.ToString() + ' ' + this.m_kickOptions[i].Key, "player", speaker);
+				this.ExecuteCommand("procon.protected.send", "admin.say", '#' + (i+1).ToString() + ' ' + this.m_kickOptions[i].Key, "player", speaker);
 			}
 		}
 
-		private void KickPlayerOption(int option)
+		private void KickPlayerOption(string speaker, int option)
 		{
-			if (KickOptionsStillValid())
+			if (!KickOptionsStillValid())
+			{
+				this.ExecuteCommand("procon.protected.send", "admin.say", "To long between commands.  Type !makeroom command again.", "player", speaker);
+				return;
+			}
+
+			if (speaker != this.m_strAdmin)
+			{
+				this.ExecuteCommand("procon.protected.send", "admin.say", "One admin at a time please!  Please wait 10 seconds and try again.", "player", speaker);
+				return;
+			}
+
+			if (option < this.m_kickOptions.Count && option <= 2 && option >= 0)
 			{
 				/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", "kicking soldier " + this.m_kickOptions[option].Key);
 
@@ -406,6 +409,11 @@ namespace PRoConEvents {
 				this.ExecuteCommand("procon.protected.send", "admin.say", this.m_kickOptions[option].Key + " - " + this.m_strPrivateKickMessage, "player", this.m_kickOptions[option].Key);
 				this.ExecuteCommand("procon.protected.tasks.add", "CMakeroom", this.m_iKickDelay.ToString(), "1", "1", "procon.protected.send", "admin.kickPlayer", this.m_kickOptions[option].Key, this.m_strPrivateKickMessage);
 			}
+			else
+			{
+				this.ExecuteCommand("procon.protected.send", "admin.say", "Invalid player selection.", "player", speaker);
+			}
+
 		}
 
 	}
