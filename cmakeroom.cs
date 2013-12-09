@@ -51,7 +51,7 @@ namespace PRoConEvents {
 			this.m_kickOptions = new List<KeyValuePair<string, int>>();
 			this.m_iMinKickScore = 1000;
 			this.m_iKickDelay = 10;
-			this.m_bDebug = true;
+			this.m_bDebug = false;
 			this.m_bPluginActive = false;
 			this.m_strCommandGivenMessage = "Lowest score player will be kicked to make room for a Clan Member";
 			this.m_strPrivateKickMessage = "You will be kicked to make room for a Clan Member";
@@ -111,7 +111,7 @@ namespace PRoConEvents {
 	          </i>
 	          <li><b>Debug On</b><br />
 	          <br />
-			Ignore.  No longer used but can be used in the script if needed if extending plugin.
+			Display debug messages in procon console window (only useful for developers).
 	          <br /><br />
 	          </li>
 	        </ul>
