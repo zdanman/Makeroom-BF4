@@ -300,7 +300,7 @@ namespace PRoConEvents {
 				}
 				else
 				{
-					this.ExecuteCommand("procon.protected.send", "admin.say", "makeroom privileges denied...", "all");
+					this.ExecuteCommand("procon.protected.send", "admin.say", "makeroom privileges denied...", "player", speaker);
 				}
 			}
 
@@ -324,7 +324,7 @@ namespace PRoConEvents {
 				}
 				else
 				{
-					this.ExecuteCommand("procon.protected.send", "admin.say", "makeroom privileges denied...", "all");
+					this.ExecuteCommand("procon.protected.send", "admin.say", "makeroom privileges denied...", "player", speaker);
 				}
 			}
 		}
