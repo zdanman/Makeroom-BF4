@@ -65,7 +65,7 @@ namespace PRoConEvents {
 		}
 
 		public string GetPluginVersion() {
-			return "0.5";
+			return "0.6";
 		}
 
 		public string GetPluginAuthor() {
@@ -116,6 +116,12 @@ namespace PRoConEvents {
 	          </li>
 	        </ul>
 	        <br><br>
+	        <h3>Change Log</h3><br>
+	        <h4>0.6</h4><br>
+	        <ul>
+	        <li>Fixed: Privilege Denied message is now sent to player who executed.</li>
+	        <li>Changed: User friendly ZIP file.</li>
+	        </ul>
 	        <h3>Change Log</h3><br>
 	        <h4>0.5</h4><br>
 	        <ul>
