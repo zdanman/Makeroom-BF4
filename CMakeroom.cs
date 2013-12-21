@@ -44,11 +44,13 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 
 		private bool m_bDebug;
 		private bool m_bPluginActive;
+		private bool m_bPluginEnabled;
 
 		private string m_strCommandGivenMessage;
 		private string m_strPrivateKickMessage;
 
 		private List<KeyValuePair<string, int>> m_kickOptions;
+		protected Dictionary<string, CPlayerInfo> PlayerList;
 		private string m_strAdmin;
 		
 		#endregion
@@ -59,6 +61,7 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 			this.m_dateOld = this.m_dateKickOptionsSet = DateTime.Now;
 
 			this.m_kickOptions = new List<KeyValuePair<string, int>>();
+			this.PlayerList = new Dictionary<string, CPlayerInfo>();
 			this.m_iMinKickScore = 1000;
 			this.m_iKickDelay = 10;
 			this.m_bDebug = false;
@@ -75,7 +78,7 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 		}
 
 		public string GetPluginVersion() {
-			return "0.6";
+			return "0.7.0.1";
 		}
 
 		public string GetPluginAuthor() {
@@ -101,12 +104,12 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 	        <ul>
 	          <li><b>Safe Score</b><br />
 	          <br />
-	          No players will be kicked if they have reached this score - even if they are the lowest.  Example: if set to 10 then only the newjoins will be likely kicked.  If set to 50000 then all lowscores are subject to kick.<br />
+	          No players will be kicked if they have reached this score - even if they are the lowest.  Example: if set to 10 then only the newjoins will be likely kicked.  If set to 50000 then all lowscores are subject to kick.  (Default:1000)<br />
 	          <br /><br />
 	          </li>
 	          <li><b>Kick Delay</b><br />
 	          <br />
-	          Seconds between command being issued and player being kicked (Gives the player time to read the bye-bye message).  Setting this to zero means immediate kick.
+	          Seconds between command being issued and player being kicked (Gives the player time to read the bye-bye message).  Setting this to zero means immediate kick. (Default: 10)
 	          <br /><br />
 	          </li>
 	          <li><b>Global Message When Kicking</b><br />
@@ -127,12 +130,16 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 	        </ul>
 	        <br><br>
 	        <h3>Change Log</h3><br>
+	        <h4>0.7</h4><br>
+	        <ul>
+	        <li>Fixed: Player not listing bugs.</li>
+		   <li>Fixed: Various improvements and compatibility changes.</li>
+	        </ul>
 	        <h4>0.6</h4><br>
 	        <ul>
 	        <li>Fixed: Privilege Denied message is now sent to player who executed.</li>
 	        <li>Changed: User friendly ZIP file.</li>
 	        </ul>
-	        <h3>Change Log</h3><br>
 	        <h4>0.5</h4><br>
 	        <ul>
 	        <li>Fixed: Made several improvements/fixes.</li>
@@ -229,8 +236,13 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 
 		#endregion
 
+		public void WriteDebugConsole(string output)
+		{
+			if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", "^bCMakeroom: " + output);
+		}
+
 		private void StartMakeroomSystem()
-		{ this.m_bPluginActive = true; }
+		{ if (this.m_bPluginEnabled) this.m_bPluginActive = true; }
 
 		private void StopMakeroomSystem()
 		{ this.m_bPluginActive = false; }
@@ -243,14 +255,44 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 			this.RegisterEvents(this.GetType().Name, "OnListPlayers", "OnPlayerLeft", "OnPlayerJoin", "OnGlobalChat", "OnTeamChat", "OnSquadChat", "OnLevelLoaded");
 		}
 
+          public void OnListPlayers(List<CPlayerInfo> players, CPlayerSubset subset)
+		{
+	     	if (subset.Subset == CPlayerSubset.PlayerSubsetType.All)
+			{
+				this.PlayerList.Clear(); // fresh list
+               	foreach (CPlayerInfo p in players)
+				{
+					this.PlayerList.Add(p.SoldierName, p);
+				}
+            	}
+		}
+		
+		public void OnPlayerLeft(CPlayerInfo p)
+		{
+     		if ( this.PlayerList.ContainsKey(p.SoldierName) )
+			{
+				this.PlayerList.Remove(p.SoldierName);
+			}
+		}
+		
+		public void OnPlayerJoin(string soldierName)
+		{
+			if (!this.PlayerList.ContainsKey(soldierName))
+			{
+				this.PlayerList.Add(soldierName, new CPlayerInfo(soldierName, "", 0, 24));
+			}
+		}
+
 		public void OnPluginEnable()
 		{
-			this.ExecuteCommand("procon.protected.pluginconsole.write", "^bCMakeroom ^2Enabled!");
+			WriteDebugConsole("^2Enabled!");
+			this.m_bPluginEnabled = true;
 			StartMakeroomSystem();
 		}
 
 		public void OnPluginDisable() {
-			this.ExecuteCommand("procon.protected.pluginconsole.write", "^bCMakeroom ^1Disabled =(");
+			WriteDebugConsole("^1Disabled =(");
+			this.m_bPluginEnabled = false;
 			StopMakeroomSystem();
 		}
 
@@ -288,7 +330,6 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 			Match match = Regex.Match(message, @"#(\d)");
 			if (match.Success)
 			{
-				// this.ExecuteCommand("procon.protected.pluginconsole.write", "vote received " + match.Groups[1].Value);
 				if (cpPlayerPrivs.CanKickPlayers)
 				{
 					// kick player selected - 1 (because displayed is [1 - 3] not [0 - 2]
@@ -299,7 +340,7 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 			match = Regex.Match(message, @"^!makeroom");
 			if (match.Success)
 			{
-				// this.ExecuteCommand("procon.protected.pluginconsole.write", "makeroom chat message received by " + speaker);
+				WriteDebugConsole("makeroom chat message received by " + speaker);
 				if (cpPlayerPrivs.CanKickPlayers)
 				{
 					if (KickOptionsStillValid() && speaker != this.m_strAdmin)
@@ -308,7 +349,7 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 					}
 					else
 					{
-						/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", "executing !makeroom");
+						WriteDebugConsole("executing !makeroom");
 
 						GenerateKickOptions(speaker);
 						DisplayKickOptions(speaker);
@@ -323,7 +364,7 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 			match = Regex.Match(message, @"^\?makeroom");
 			if (match.Success)
 			{
-				// this.ExecuteCommand("procon.protected.pluginconsole.write", "makeroom chat message received by " + speaker);
+				WriteDebugConsole("force makeroom chat message received by " + speaker);
 				if (cpPlayerPrivs.CanKickPlayers)
 				{
 					if (KickOptionsStillValid() && speaker != this.m_strAdmin)
@@ -332,7 +373,7 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 					}
 					else
 					{
-						/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", "executing ?makeroom");
+						WriteDebugConsole("executing ?makeroom");
 
 						GenerateKickOptions(speaker);
 						KickPlayerOption(speaker, 0); // go ahead and kick first player in list
@@ -347,9 +388,9 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 
 		private void GenerateKickOptions(string speaker)
 		{
-			if (this.FrostbitePlayerInfoList.Count < 3)
+			if (this.PlayerList.Count < 3)
 			{
-				/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", this.FrostbitePlayerInfoList.Count.ToString() + " players available - not enough in KickLowPlayer");
+				WriteDebugConsole(this.PlayerList.Count.ToString() + " players available - not enough in KickLowPlayer");
 				this.ExecuteCommand("procon.protected.send", "admin.say", "Not enough players", "player", speaker);
 				return;
 			}
@@ -360,7 +401,7 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 			// refresh list
 			this.m_kickOptions.Clear();
 
-			foreach( KeyValuePair<string,CPlayerInfo> player in this.FrostbitePlayerInfoList )
+			foreach( KeyValuePair<string,CPlayerInfo> player in this.PlayerList )
 			{
 				if (player.Value.Score < this.m_iMinKickScore)
 				{
@@ -399,7 +440,7 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 			this.ExecuteCommand("procon.protected.send", "admin.say", "Select Low Score Player To Kick:", "player", speaker);
 			for(int i = 0; i < 3; i++)
 			{
-				/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", "displaying soldier option: #" + (i+1).ToString() + " " + this.m_kickOptions[i].Key);
+				WriteDebugConsole("displaying soldier option: #" + (i+1).ToString() + " " + this.m_kickOptions[i].Key);
 
 				this.ExecuteCommand("procon.protected.send", "admin.say", '#' + (i+1).ToString() + ' ' + this.m_kickOptions[i].Key, "player", speaker);
 			}
@@ -421,13 +462,14 @@ using CapturableEvent = PRoCon.Core.Events.CapturableEvents;
 
 			if (option < this.m_kickOptions.Count && option <= 2 && option >= 0)
 			{
-				/* debug */ if (this.m_bDebug) this.ExecuteCommand("procon.protected.pluginconsole.write", "kicking soldier " + this.m_kickOptions[option].Key);
+				WriteDebugConsole("kicking soldier " + this.m_kickOptions[option].Key);
 
 				this.m_dateKickOptionsSet = this.m_dateOld; // invalidate kick options
 				this.ExecuteCommand("procon.protected.send", "admin.say", this.m_strCommandGivenMessage, "all");
 				this.ExecuteCommand("procon.protected.send", "admin.say", "Unfortunate Soldier: " + this.m_kickOptions[option].Key, "all");
 				this.ExecuteCommand("procon.protected.send", "admin.say", this.m_kickOptions[option].Key + " - " + this.m_strPrivateKickMessage, "player", this.m_kickOptions[option].Key);
 				this.ExecuteCommand("procon.protected.tasks.add", "CMakeroom", this.m_iKickDelay.ToString(), "1", "1", "procon.protected.send", "admin.kickPlayer", this.m_kickOptions[option].Key, this.m_strPrivateKickMessage);
+				//this.PlayerList.Remove(this.m_kickOptions[option].Key); // force removal from list
 			}
 			else
 			{
